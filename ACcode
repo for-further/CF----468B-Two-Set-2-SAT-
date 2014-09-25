@@ -1,0 +1,129 @@
+#include <map>
+#include <set>
+#include <cmath>
+#include <queue>
+#include <stack>
+#include <cstdio>
+#include <string>
+#include <vector>
+#include <cstring>
+#include <iostream>
+#include <algorithm>
+using namespace std;
+
+typedef double DB;
+typedef long long ll;
+typedef unsigned long long ull;
+typedef pair<int, int> PII;
+
+#define pb push_back
+#define MP make_pair
+#define lson l, m, rt << 1
+#define rson m + 1, r, rt << 1 | 1
+
+const DB eps = 1e-8;
+const int inf = 0x3f3f3f3f;
+const int mod = 10000007;
+const int maxn = 200000 + 10;
+
+int n, a, b, p[maxn];
+map<int, int> mp;
+map<int, int> ::iterator it;
+struct node{
+    int v, next;
+}edge[2000000];
+int head[maxn], cnt, dfn[maxn], low[maxn], used[maxn], id[maxn], sz, idx;
+stack<int> sta;
+void addedge(int u, int v){
+    edge[cnt].v = v; edge[cnt].next = head[u]; head[u] = cnt++;
+    //cout <<"u:" << u << ", v:" << v <<endl;
+}
+void Tarjan(int x){
+    dfn[x] = low[x] = ++idx;
+    sta.push(x);
+    used[x] = 1;
+    for(int i=head[x]; ~i; i=edge[i].next){
+        int k = edge[i].v;
+        if(!dfn[k]){
+            Tarjan(k);
+            low[x] = min(low[x], low[k]);
+        }else if(used[k]) low[x] = min(dfn[k], low[x]);
+    }
+    if(dfn[x] == low[x]){
+        sz++;
+        int k;
+        do{
+            k = sta.top(); sta.pop();
+            used[k] = 0;
+            id[k] = sz;
+        }while(k != x);
+    }
+}
+bool Two_SAT(){
+    idx = sz = 0;
+    memset(dfn, 0, sizeof(dfn));
+    while(!sta.empty()) sta.pop();
+    for(int i=0; i<2*n; i++)
+        if(!dfn[i]) Tarjan(i);
+//    for(int i=0; i<2*n; i++)
+//        printf("%d %d\n", i, id[i]);
+    for(int i=0; i<n; i++)
+        if(id[i] == id[i + n]) return false;
+    return true;
+}
+bool cal(){
+    for(int i=0; i<n; i++){
+        int cnt = 0, y = a - p[i], z = b - p[i];
+        if((it = mp.find(y)) != mp.end()){
+            cnt |= 1;
+        }
+            if((it = mp.find(z)) != mp.end()){
+            cnt |= 2;
+        }
+        if(!cnt)return false;
+        if(cnt == 1){///x&y
+            if(p[i] != y) {addedge(i, mp[y]); addedge(mp[y], i); addedge(i + n, mp[y] + n); addedge(mp[y] + n, i + n);}
+        }else if(cnt == 2){///x&z
+            if(p[i] != z) {addedge(i, mp[z]); addedge(mp[z], i); addedge(i + n, mp[z] + n); addedge(mp[z] + n, i + n);}
+        }else if(y == z){///x&y
+            if(p[i] != y) {addedge(i, mp[y]); addedge(mp[y], i); addedge(i + n, mp[y] + n); addedge(mp[y] + n, i + n);}
+        }else if(y != p[i] && z != p[i]){///y^z
+            int yy = mp[y], zz = mp[z];
+            addedge(yy, zz + n); addedge(zz, yy + n); addedge(yy + n, zz); addedge(zz + n, yy);
+        }
+    }
+    if(!Two_SAT()) return false;
+    return true;
+}
+int main(){
+    while(scanf("%d%d%d", &n, &a, &b) == 3){
+        mp.clear();
+        memset(head, -1, sizeof(head)); cnt = 0;
+        for(int i=0; i<n; i++){
+            scanf("%d", &p[i]);
+            mp[p[i]] = i;
+        }
+        if(!cal()) {puts("NO"); continue;}
+        else puts("YES");
+
+        for(int i=0; i<n; i++){
+            int y = a - p[i], z = b - p[i], flag = 0;
+            if((it = mp.find(y)) != mp.end()){
+                flag |= 1;
+            }
+            if((it = mp.find(z)) != mp.end()){
+                flag |= 2;
+            }
+            if(flag == 1) printf("0 ");
+            else if(flag == 2) printf("1 ");
+            else if(p[i] == y && id[i] == id[mp[z]]) printf("1 ");
+            else if(p[i] == z && id[i] == id[mp[y]]) printf("0 ");
+            else{
+                if(id[i] == id[mp[z]]) printf("1 ");
+                else printf("0 ");
+            }
+        }
+        puts("");
+    }
+    return 0;
+}
